@@ -1,10 +1,10 @@
 bl_info = {
-    "name": "Update_Texture",
+    "name": "get Node Texture",
     "author": "Stokes Lee",
     "version": (0, 1, 0),
     "blender": (2, 79, 0),
-    "location": "UV/Image Editor > Header",
-    "category": "3D View"
+    "location": "UV > Header",
+    "category": "UV"
 }
 
 import bpy
