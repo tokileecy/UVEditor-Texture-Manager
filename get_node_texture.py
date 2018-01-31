@@ -20,18 +20,31 @@ from bpy.props import (StringProperty,
 
 
 class Manager():
+<<<<<<< Updated upstream
     
     @property
     def active_object(self):
         return bpy.context.scene.objects.active
     
     @property
+=======
+    @property
+    def render_engine(self):
+        return bpy.context.scene.render.engine
+        
+    @property
+    def active_object(self):
+        return bpy.context.scene.objects.active
+    
+    @property
+>>>>>>> Stashed changes
     def material(self):
         if len(self.active_object.material_slots) > 0 :
             material = self.active_object.material_slots[0].material
             return material
         return None
     @property
+<<<<<<< Updated upstream
     def texture_nodes(self):
         nodes = self.material.node_tree.nodes
         # return [node for node in nodes if node.type == 'TEX_IMAGE']
@@ -42,19 +55,44 @@ class Manager():
         nodes = self.material.node_tree.nodes
         return [ (node.image.name, node.image.name, node.image.name) for node in nodes if node.type == 'TEX_IMAGE' ]
     @property
+=======
+    def use_nodes(self):
+        return self.material.use_nodes
+
+    @property
+>>>>>>> Stashed changes
     def uv_editor_area(self):
         for area in bpy.context.screen.areas :
             if area.type == 'IMAGE_EDITOR' :
                 return area
         return None
 
+<<<<<<< Updated upstream
+=======
+    #node區塊
+    @property
+    def texture_nodes(self):
+        nodes = self.material.node_tree.nodes
+        return [node for node in nodes if node.type == 'TEX_IMAGE' ]
+
+    @property
+    def texture_nodes_item(self):
+        nodes = self.texture_nodes
+        return [ (node.image.name, node.image.name, node.image.name) for node in nodes ]
+
+>>>>>>> Stashed changes
     def set_image(self, area, image_node):
         area.spaces.active.image = image_node.image
 
 class Texture_Manager_Prop(PropertyGroup):
     Texture_item = EnumProperty(
+<<<<<<< Updated upstream
         name="Apply Data to:",
         description="Apply Data to attribute.",
+=======
+        name="texture:",
+        description="",
+>>>>>>> Stashed changes
         items = lambda scene, context : Texture_Manager_Panel.manager.texture_nodes_item
         )
 class Texture_Manager_Panel(bpy.types.Panel):
@@ -64,10 +102,13 @@ class Texture_Manager_Panel(bpy.types.Panel):
     bl_region_type = 'UI'
 
     manager = Manager()
+<<<<<<< Updated upstream
 
     # Sphere_radius = IntProperty(
     #     name = "r", default = 0, min = 0)
     # return Sphere_radius
+=======
+>>>>>>> Stashed changes
     
     def draw(self, context):
         layout = self.layout
@@ -100,6 +141,7 @@ class UVEditor_get_uv_0(bpy.types.Operator):
     bl_idname = "ops.uv_editor_get_uv_0"
     bl_label = "Classic"
 
+<<<<<<< Updated upstream
     def get_image_node(self) :
         Tex_nodes = Texture_Manager_Panel.manager.texture_nodes
         for node in Tex_nodes :
@@ -107,6 +149,24 @@ class UVEditor_get_uv_0(bpy.types.Operator):
                 base = node.outputs['Color'].links[0].to_node.bl_rna.base
                 if base == bpy.types.ShaderNode.bl_rna :
                     return node
+=======
+    def get_image_node(self):
+        if Texture_Manager_Panel.use_nodes:
+            if Texture_Manager_Panel.render_engine == 'CYCLES':
+                Tex_nodes = Texture_Manager_Panel.manager.texture_nodes
+                for node in Tex_nodes :
+                    if  len(node.outputs['Color'].links) > 0 :
+                        base = node.outputs['Color'].links[0].to_node.bl_rna.base
+                        if base == bpy.types.ShaderNode.bl_rna :
+                            return node
+            elif Texture_Manager_Panel.render_engine == 'BLENDER_RENDER':
+
+        else:
+            if Texture_Manager_Panel.render_engine == 'BLENDER_RENDER':
+
+
+
+>>>>>>> Stashed changes
         return None
 
     def execute(self, context):
