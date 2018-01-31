@@ -8,10 +8,19 @@ bl_info = {
 }
 
 import bpy
-from bpy.types import Menu, Panel, UIList
+from bpy.types import PropertyGroup
+from bpy.props import (StringProperty,
+                       BoolProperty,
+                       IntProperty,
+                       FloatProperty,
+                       FloatVectorProperty,
+                       EnumProperty,
+                       PointerProperty,
+                       )
 
 
 class Manager():
+    
     @property
     def active_object(self):
         return bpy.context.scene.objects.active
@@ -25,8 +34,13 @@ class Manager():
     @property
     def texture_nodes(self):
         nodes = self.material.node_tree.nodes
-        return [node for node in nodes if node.type == 'TEX_IMAGE']
+        # return [node for node in nodes if node.type == 'TEX_IMAGE']
+        return [node for node in nodes if node.type == 'TEX_IMAGE' ]
 
+    @property
+    def texture_nodes_item(self):
+        nodes = self.material.node_tree.nodes
+        return [ (node.image.name, node.image.name, node.image.name) for node in nodes if node.type == 'TEX_IMAGE' ]
     @property
     def uv_editor_area(self):
         for area in bpy.context.screen.areas :
@@ -37,7 +51,12 @@ class Manager():
     def set_image(self, area, image_node):
         area.spaces.active.image = image_node.image
 
-    
+class Texture_Manager_Prop(PropertyGroup):
+    Texture_item = EnumProperty(
+        name="Apply Data to:",
+        description="Apply Data to attribute.",
+        items = lambda scene, context : Texture_Manager_Panel.manager.texture_nodes_item
+        )
 class Texture_Manager_Panel(bpy.types.Panel):
     """Creates a Panel in the scene context of the properties editor"""
     bl_label = "Texture Manager"
@@ -46,10 +65,16 @@ class Texture_Manager_Panel(bpy.types.Panel):
 
     manager = Manager()
 
+    # Sphere_radius = IntProperty(
+    #     name = "r", default = 0, min = 0)
+    # return Sphere_radius
+    
     def draw(self, context):
         layout = self.layout
-        self.layout.operator("ops.uv_editor_get_uv_0")
-        self.layout.operator("ops.uv_editor_get_uv_1")
+        scene = context.scene
+        layout.operator("ops.uv_editor_get_uv_0")
+        layout.operator("ops.uv_editor_get_uv_1")
+        layout.column().prop(scene.Texture_Manager_Prop,"Texture_item",text = "")
         
 class UVEditor_get_uv_1(bpy.types.Operator):
     bl_idname = "ops.uv_editor_get_uv_1"
@@ -100,13 +125,17 @@ def register():
     bpy.utils.register_class(UVEditor_get_uv_1)
     bpy.types.IMAGE_HT_header.prepend(draw_func)
     bpy.utils.register_class(Texture_Manager_Panel)
-
+    bpy.utils.register_class(Texture_Manager_Prop)
+    bpy.types.Scene.Texture_Manager_Prop = bpy.props.PointerProperty(type = Texture_Manager_Prop)
     
 def unregister():
     bpy.utils.unregister_class(UVEditor_get_uv_0)
     bpy.utils.unregister_class(UVEditor_get_uv_1)
     bpy.types.IMAGE_HT_header.remove(draw_func)
+    del bpy.types.Scene.Texture_Manager_Prop
     bpy.utils.unregister_class(Texture_Manager_Panel)
+    bpy.utils.unregister_class(Texture_Manager_Panel)
+    
 
 if __name__ == "__main__":
     register()  
