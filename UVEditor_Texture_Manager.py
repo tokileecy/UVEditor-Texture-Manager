@@ -63,7 +63,7 @@ class Manager():
     @property
     def slot_textures(self):
         texture_slots = self.material.texture_slots
-        textures = [texture for texture in texture_slots if texture is not None]
+        textures = [texture for texture in texture_slots if (texture is not None) if (texture.texture.image is not None) ]
         return textures
     @property
     def slot_textures_item(self):
@@ -74,9 +74,9 @@ class Manager():
     def texture_nodes(self):
         nodes = self.material.node_tree.nodes
         if self.render_engine == 'CYCLES':
-            return [node for node in nodes if node.type == 'TEX_IMAGE' ]
+            return [node for node in nodes if (node.type == 'TEX_IMAGE') if (node.image is not None) ]
         elif self.render_engine == 'BLENDER_RENDER':
-            return [node for node in nodes if node.type == 'TEXTURE']
+            return [node for node in nodes if (node.type == 'TEXTURE') if (node.texture.image is not None)]
 
     @property
     def texture_nodes_item(self):
