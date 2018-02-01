@@ -1,9 +1,9 @@
 bl_info = {
-    "name": "get Node Texture",
+    "name": "UIEditor Texture Manager",
     "author": "Stokes Lee",
     "version": (0, 2, 0),
     "blender": (2, 79, 0),
-    "location": "UV > TOOLS",
+    "location": "UV > Properties Shelf",
     "category": "UV"
 }
 
@@ -39,6 +39,7 @@ class Manager():
             if area.type == 'IMAGE_EDITOR' :
                 return area
         return None
+
     @property
     def slot_textures(self):
         texture_slots = self.material.texture_slots
@@ -49,7 +50,6 @@ class Manager():
         textures = self.slot_textures
         return [(str(index), textures[index].texture.image.name, textures[index].texture.image.name) for index in range(0, len(textures))]
     
-    #node區塊
     @property
     def texture_nodes(self):
         nodes = self.material.node_tree.nodes
@@ -138,7 +138,7 @@ def register():
     
 def unregister():
     del bpy.types.Scene.Texture_Manager_Prop
-    bpy.utils.unregister_class(Texture_Manager_Panel)
+    bpy.utils.unregister_class(Texture_Manager_Prop)
     bpy.utils.unregister_class(Texture_Manager_Panel)
     
 
