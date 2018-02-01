@@ -18,7 +18,7 @@ Created by Stokes Lee
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 bl_info = {
-    "name": "UIEditor Texture Manager",
+    "name": "UVEditor Texture Manager",
     "author": "Stokes Lee",
     "version": (0, 2, 0),
     "blender": (2, 79, 0),
@@ -45,7 +45,7 @@ class Manager():
     @property
     def material(self):
         if len(self.active_object.material_slots) > 0 :
-            material = self.active_object.material_slots[0].material
+            material = self.active_object.active_material
             return material
         return None
 
