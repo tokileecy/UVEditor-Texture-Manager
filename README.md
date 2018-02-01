@@ -1,3 +1,4 @@
+# UVEditor-Texture-Manager
 Blender-get-node-texture
 在blender的UV/Image Editor的Property工具欄中增價一塊UIEditor Texture Manager
 目的上是可以在選擇物件下，依定特定的材質顯示相關的texture，避免在全部的texture或material中抓取
