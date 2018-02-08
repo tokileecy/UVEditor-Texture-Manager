@@ -33,7 +33,7 @@ from rna_prop_ui import PropertyPanel
 from bpy.props import EnumProperty
 
 class Manager():
-
+    # last_activ_object = bpy.context.scene.objects.active
     @property
     def render_engine(self):
         return bpy.context.scene.render.engine
@@ -63,20 +63,54 @@ class Manager():
     @property
     def slot_textures(self):
         texture_slots = self.material.texture_slots
-        textures = [texture for texture in texture_slots if (texture is not None) if (texture.texture.image is not None) ]
-        return textures
+        filter_textures = []
+        for texture in texture_slots:
+            if (texture is not None) and (texture.texture.image is not None):
+                exist = False
+                for filter_texture in filter_textures:
+                    if filter_texture.texture.image.name == texture.texture.image.name:
+                        exist = True
+                        break
+                if not exist:
+                    filter_textures.append(texture)
+        return filter_textures
+        # return [texture for texture in texture_slots if (texture is not None) if (texture.texture.image is not None) ]
     @property
     def slot_textures_item(self):
         textures = self.slot_textures
-        return [(str(index), textures[index].texture.image.name, textures[index].texture.image.name) for index in range(0, len(textures))]
+        return [(str(index), 
+                textures[index].texture.image.name, 
+                textures[index].texture.image.name) 
+                for index in range(0, len(textures))]
     
     @property
     def texture_nodes(self):
         nodes = self.material.node_tree.nodes
+        filter_nodes = []
         if self.render_engine == 'CYCLES':
-            return [node for node in nodes if (node.type == 'TEX_IMAGE') if (node.image is not None) ]
+            for node in nodes:
+                if (node.type == 'TEX_IMAGE') and (node.image is not None):
+                    exist = False
+                    for filter_node in filter_nodes:
+                        if node.image.name == filter_node.image.name:
+                            exist = True
+                            break
+                    if not exist:
+                        filter_nodes.append(node)
+            return filter_nodes
+            # return [node for node in nodes if (node.type == 'TEX_IMAGE') if (node.image is not None) ]
         elif self.render_engine == 'BLENDER_RENDER':
-            return [node for node in nodes if (node.type == 'TEXTURE') if (node.texture.image is not None)]
+            for node in nodes:
+                if (node.type == 'TEXTURE') and (node.texture.image is not None):
+                    exist = False
+                    for filter_node in filter_nodes:
+                        if node.texture.image.name == filter_node.texture.image.name:
+                            exist = True
+                            break
+                    if not exist:
+                        filter_nodes.append(node)
+            return filter_nodes
+            # return [node for node in nodes if (node.type == 'TEXTURE') if (node.texture.image is not None)]
 
     @property
     def texture_nodes_item(self):
@@ -84,7 +118,10 @@ class Manager():
         if self.render_engine == 'CYCLES':
             return [(str(index), nodes[index].image.name, nodes[index].image.name) for index in range(0, len(nodes))]
         elif self.render_engine == 'BLENDER_RENDER':
-            return [(str(index), nodes[index].texture.image.name, nodes[index].texture.image.name) for index in range(0, len(nodes))]
+            return [(str(index), 
+                    nodes[index].texture.image.name, 
+                    nodes[index].texture.image.name) 
+                    for index in range(0, len(nodes))]
 
     def set_image(self, area, image_node):
         area.spaces.active.image = image_node.image
@@ -101,6 +138,14 @@ class Manager():
             uv_editor_area.spaces.active.image = texture_nodes[index].image
         elif self.render_engine == 'BLENDER_RENDER':
             uv_editor_area.spaces.active.image = texture_nodes[index].texture.image
+    
+    # @persistent
+    # def scene_update(context):
+    #     if self.last_activ_object != self.active_object:
+            
+    #     if bpy.context.scene.objects.active.is_updated: 
+    #         Coordinate_Property_update("Cartesian_Coordinate_variable")
+    # Coordinate_Property_update.update()
 
 class Texture_Manager_Prop(PropertyGroup):
     slot_textures_item = EnumProperty(
