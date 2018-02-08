@@ -31,12 +31,14 @@ import bpy
 from bpy.types import PropertyGroup, Panel, AddonPreferences
 from rna_prop_ui import PropertyPanel
 from bpy.props import EnumProperty, BoolProperty
+from bpy.app.handlers import persistent
 
 class Manager():
-    _last_activ_object = None
+    def __init__(self):
+        self._last_active_object = None
     @property
     def active_is_update(self):
-        return _last_activ_object == bpy.context.scene.objects.active
+        return self._last_active_object != self.active_object
     @property
     def render_engine(self):
         return bpy.context.scene.render.engine
@@ -124,37 +126,50 @@ class Manager():
                     nodes[index].texture.image.name) 
                     for index in range(0, len(nodes))]
 
-    def set_image(self, area, image_node):
-        area.spaces.active.image = image_node.image
-    # def set_uv_editor_image(self, image_node)
     def slot_textures_item_update(self, index):
         textures = self.slot_textures
-        areas = self.uv_editor_areas
-        for area in areas:
-            area.spaces.active.image = textures[index].texture.image
+        if len(textures) > index:
+            areas = self.uv_editor_areas
+            for area in areas:
+                area.spaces.active.image = textures[index].texture.image
     
     def texture_nodes_item_update(self, index):
         texture_nodes = self.texture_nodes
-        areas = self.uv_editor_areas
-        if self.render_engine == 'CYCLES':
-            for area in areas:
-                area.spaces.active.image = texture_nodes[index].image
-        elif self.render_engine == 'BLENDER_RENDER':
-            for area in areas:
-                area.spaces.active.image = texture_nodes[index].texture.image
+        if len(texture_nodes) > index:
+            areas = self.uv_editor_areas
+            if self.render_engine == 'CYCLES':
+                for area in areas:
+                    area.spaces.active.image = texture_nodes[index].image
+            elif self.render_engine == 'BLENDER_RENDER':
+                for area in areas:
+                    area.spaces.active.image = texture_nodes[index].texture.image
     
-    # @persistent
-    # def scene_update(context):
-    #     if self.active_is_update:
-    #         set_image()
-            
-    #     if bpy.context.scene.objects.active.is_updated: 
-    #         Coordinate_Property_update("Cartesian_Coordinate_variable")
-    # Coordinate_Property_update.update()
+@persistent
+def scene_update(context):
+    manager = Texture_Manager_Panel.manager
+    if manager.active_is_update:
+        if manager.use_nodes:
+            manager.texture_nodes_item_update(0)
+        else:
+            manager.slot_textures_item_update(0)
+                
+        manager._last_active_object = manager.active_object
 
 class Texture_Manager_AddonPreferences(AddonPreferences):
     bl_idname = __name__
-    
+    Enable_AutoUpdate = BoolProperty(
+            name="AutoUpdate",
+            default=False,
+            update = lambda self, context : self.register_update(self.Enable_AutoUpdate),
+            )
+    def register_update(self, register):
+        if register:
+            if not scene_update.__name__ in [handler.__name__ for handler in bpy.app.handlers.scene_update_post]:
+                bpy.app.handlers.scene_update_post.append(scene_update)
+        else:
+            if scene_update.__name__ in [handler.__name__ for handler in bpy.app.handlers.scene_update_post]:
+                bpy.app.handlers.scene_update_post.remove(scene_update)
+
     Enable_Engine = BoolProperty(
             name="Engine",
             default=True,
@@ -172,6 +187,7 @@ class Texture_Manager_AddonPreferences(AddonPreferences):
         layout = self.layout
         col = layout.column()
         col.label(text="Panel")
+        col.prop(self, "Enable_AutoUpdate")
         col.prop(self, "Enable_Engine")
         col.prop(self, "Enable_Material")
         col.prop(self, "Enable_Use_nodes")
@@ -238,7 +254,15 @@ def register():
     bpy.utils.register_class(Texture_Manager_Prop)
     bpy.types.Scene.Texture_Manager_Prop = bpy.props.PointerProperty(type = Texture_Manager_Prop)
     
+    user_preferences = bpy.context.user_preferences
+    addon_prefs = user_preferences.addons[__name__].preferences
+    if addon_prefs.Enable_AutoUpdate:
+        if not scene_update.__name__ in [handler.__name__ for handler in bpy.app.handlers.scene_update_post]:
+            bpy.app.handlers.scene_update_post.append(scene_update)
+    
 def unregister():
+    if scene_update.__name__ in [handler.__name__ for handler in bpy.app.handlers.scene_update_post]:
+        bpy.app.handlers.scene_update_post.remove(scene_update)
     bpy.utils.unregister_class(Texture_Manager_AddonPreferences)
     del bpy.types.Scene.Texture_Manager_Prop
     bpy.utils.unregister_class(Texture_Manager_Prop)
