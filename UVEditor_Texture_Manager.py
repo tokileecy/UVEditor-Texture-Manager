@@ -33,7 +33,10 @@ from rna_prop_ui import PropertyPanel
 from bpy.props import EnumProperty, BoolProperty
 
 class Manager():
-    last_activ_object = None
+    _last_activ_object = None
+    @property
+    def active_is_update(self):
+        return _last_activ_object == bpy.context.scene.objects.active
     @property
     def render_engine(self):
         return bpy.context.scene.render.engine
@@ -54,11 +57,9 @@ class Manager():
         return self.material.use_nodes
 
     @property
-    def uv_editor_area(self):
-        for area in bpy.context.screen.areas :
-            if area.type == 'IMAGE_EDITOR' :
-                return area
-        return None
+    def uv_editor_areas(self):
+        areas = bpy.context.screen.areas
+        return [area for area in areas if area.type == 'IMAGE_EDITOR']
 
     @property
     def slot_textures(self):
@@ -125,23 +126,27 @@ class Manager():
 
     def set_image(self, area, image_node):
         area.spaces.active.image = image_node.image
-
+    # def set_uv_editor_image(self, image_node)
     def slot_textures_item_update(self, index):
         textures = self.slot_textures
-        uv_editor_area = self.uv_editor_area
-        uv_editor_area.spaces.active.image = textures[index].texture.image
+        areas = self.uv_editor_areas
+        for area in areas:
+            area.spaces.active.image = textures[index].texture.image
     
     def texture_nodes_item_update(self, index):
         texture_nodes = self.texture_nodes
-        uv_editor_area = self.uv_editor_area
+        areas = self.uv_editor_areas
         if self.render_engine == 'CYCLES':
-            uv_editor_area.spaces.active.image = texture_nodes[index].image
+            for area in areas:
+                area.spaces.active.image = texture_nodes[index].image
         elif self.render_engine == 'BLENDER_RENDER':
-            uv_editor_area.spaces.active.image = texture_nodes[index].texture.image
+            for area in areas:
+                area.spaces.active.image = texture_nodes[index].texture.image
     
     # @persistent
     # def scene_update(context):
-    #     if self.last_activ_object != self.active_object:
+    #     if self.active_is_update:
+    #         set_image()
             
     #     if bpy.context.scene.objects.active.is_updated: 
     #         Coordinate_Property_update("Cartesian_Coordinate_variable")
