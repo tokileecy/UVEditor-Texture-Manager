@@ -28,12 +28,12 @@ bl_info = {
 }
 
 import bpy
-from bpy.types import PropertyGroup, Panel
+from bpy.types import PropertyGroup, Panel, AddonPreferences
 from rna_prop_ui import PropertyPanel
-from bpy.props import EnumProperty
+from bpy.props import EnumProperty, BoolProperty
 
 class Manager():
-    # last_activ_object = bpy.context.scene.objects.active
+    last_activ_object = None
     @property
     def render_engine(self):
         return bpy.context.scene.render.engine
@@ -147,6 +147,30 @@ class Manager():
     #         Coordinate_Property_update("Cartesian_Coordinate_variable")
     # Coordinate_Property_update.update()
 
+class Texture_Manager_AddonPreferences(AddonPreferences):
+    bl_idname = __name__
+    
+    Enable_Engine = BoolProperty(
+            name="Engine",
+            default=True,
+            )
+    Enable_Material = BoolProperty(
+            name="Material",
+            default=True,
+            )
+    Enable_Use_nodes = BoolProperty(
+            name="use_nodes",
+            default=True,
+            )
+
+    def draw(self, context):
+        layout = self.layout
+        col = layout.column()
+        col.label(text="Panel")
+        col.prop(self, "Enable_Engine")
+        col.prop(self, "Enable_Material")
+        col.prop(self, "Enable_Use_nodes")
+
 class Texture_Manager_Prop(PropertyGroup):
     slot_textures_item = EnumProperty(
         name="Texture",
@@ -171,21 +195,28 @@ class Texture_Manager_Panel(Panel):
     def draw(self, context):
         layout = self.layout
         scene = context.scene
+        user_preferences = context.user_preferences
+        addon_prefs = user_preferences.addons[__name__].preferences
         col = layout.column()
-        col.prop(context.scene.render, "engine")
+        if addon_prefs.Enable_Engine:
+            col.prop(context.scene.render, "engine")
+
         material = self.manager.material
         ob = context.object
-        if context.object is not None:
-            is_sortable = (len(ob.material_slots) > 1)
-            rows = 1
-            if is_sortable:
-                rows = 4
-            row = col.row()
-            row.template_list("MATERIAL_UL_matslots", "", ob, "material_slots", ob, "active_material_index", rows=rows)
+
+        if addon_prefs.Enable_Material:
+            if context.object is not None:
+                is_sortable = (len(ob.material_slots) > 1)
+                rows = 1
+                if is_sortable:
+                    rows = 4
+                row = col.row()
+                row.template_list("MATERIAL_UL_matslots", "", ob, "material_slots", ob, "active_material_index", rows=rows)
 
         if material is not None:
-            if self.manager is not None:
-                col.prop(material, "use_nodes", icon='NODETREE')
+            if addon_prefs.Enable_Use_nodes:
+                if self.manager is not None:
+                    col.prop(material, "use_nodes", icon='NODETREE')
             if material.use_nodes:
                 col.label("Texture Node")
                 col.prop(scene.Texture_Manager_Prop,"node_texture_item")
@@ -197,11 +228,13 @@ class Texture_Manager_Panel(Panel):
             col.label("Do not Exist Material")
     
 def register():
+    bpy.utils.register_class(Texture_Manager_AddonPreferences)
     bpy.utils.register_class(Texture_Manager_Panel)
     bpy.utils.register_class(Texture_Manager_Prop)
     bpy.types.Scene.Texture_Manager_Prop = bpy.props.PointerProperty(type = Texture_Manager_Prop)
     
 def unregister():
+    bpy.utils.unregister_class(Texture_Manager_AddonPreferences)
     del bpy.types.Scene.Texture_Manager_Prop
     bpy.utils.unregister_class(Texture_Manager_Prop)
     bpy.utils.unregister_class(Texture_Manager_Panel)
