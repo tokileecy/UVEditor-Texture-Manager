@@ -20,7 +20,7 @@ Created by Stokes Lee
 bl_info = {
     "name": "UVEditor Texture Manager",
     "author": "Stokes Lee",
-    "version": (1, 0, 0),
+    "version": (1, 0, 1),
     "blender": (2, 79, 0),
     "location": "UV > Properties Shelf",
     "category": "UV",
@@ -38,16 +38,13 @@ class Manager():
         self._last_active_object = None
         self._last_material = None
         self._last_first_image = None
+        self.support_engine = ['CYCLES', 'BLENDER_RENDER']
     @property
-    def last_active_object(self):
-        return self._last_active_object
-    @property
-    def last_material(self):
-        return self._last_material
-    @property
-    def last_first_image(self):
-        return self._last_first_image
-
+    def is_support(self):
+        for engine in self.support_engine:
+            if engine == self.render_engine:
+                return True
+        return False
     @property
     def is_first_image_update(self):
         return self._last_first_image != self.first_image
@@ -57,6 +54,16 @@ class Manager():
     @property
     def is_active_object_update(self):
         return self._last_active_object != self.active_object
+
+    @property
+    def last_active_object(self):
+        return self._last_active_object
+    @property
+    def last_material(self):
+        return self._last_material
+    @property
+    def last_first_image(self):
+        return self._last_first_image
 
     @property
     def uv_editor_areas(self):
@@ -79,6 +86,8 @@ class Manager():
         return self.material.use_nodes
     @property
     def first_image(self):
+        if not self.is_support:
+            return None
         if self.material is not None:
             if self.use_nodes:
                 if self.first_texture_node is not None:
@@ -101,6 +110,8 @@ class Manager():
 
     @property
     def first_slot_texture(self):
+        if not self.is_support:
+            return None
         texture_slots = self.material.texture_slots
         for texture in texture_slots:
             if (texture is not None) and (texture.texture.image is not None):
@@ -108,6 +119,8 @@ class Manager():
         return None
     @property
     def slot_textures(self):
+        if not self.is_support:
+            return []
         texture_slots = self.material.texture_slots
         filter_textures = []
         for texture in texture_slots:
@@ -123,6 +136,8 @@ class Manager():
         # return [texture for texture in texture_slots if (texture is not None) if (texture.texture.image is not None) ]
     @property
     def slot_textures_item(self):
+        if not self.is_support:
+            return None
         textures = self.slot_textures
         return [(str(index), 
                 textures[index].texture.image.name, 
@@ -131,6 +146,8 @@ class Manager():
 
     @property
     def first_texture_node(self):
+        if not self.is_support:
+            return None
         nodes = self.texture_nodes
         if self.render_engine == 'CYCLES':
             for node in nodes:
@@ -144,6 +161,8 @@ class Manager():
             return None
     @property
     def texture_nodes(self):
+        if not self.is_support:
+            return []
         nodes = self.material.node_tree.nodes
         filter_nodes = []
         if self.render_engine == 'CYCLES':
@@ -172,9 +191,14 @@ class Manager():
             # return [node for node in nodes if (node.type == 'TEXTURE') if (node.texture.image is not None)]
     @property
     def texture_nodes_item(self):
+        if not self.is_support:
+            return None
         nodes = self.texture_nodes
         if self.render_engine == 'CYCLES':
-            return [(str(index), nodes[index].image.name, nodes[index].image.name) for index in range(0, len(nodes))]
+            return [(str(index), 
+                    nodes[index].image.name, 
+                    nodes[index].image.name) 
+                    for index in range(0, len(nodes))]
         elif self.render_engine == 'BLENDER_RENDER':
             return [(str(index), 
                     nodes[index].texture.image.name, 
@@ -215,18 +239,19 @@ class Manager():
 @persistent
 def scene_update(context):
     manager = bpy.context.scene.Texture_Manager_Prop.manager
-    if manager.is_active_object_update:
-        manager.set_first_texture()
-        manager._last_active_object = manager.active_object
-        manager._last_material = manager.material
-        manager._last_first_image = manager.first_image
-    elif manager.is_material_update:
-        manager.set_first_texture()
-        manager._last_material = manager.material
-        manager._last_first_image = manager.first_image
-    elif manager.is_first_image_update:
-        manager.set_first_texture()
-        manager._last_first_image = manager.first_image
+    if manager.is_support:
+        if manager.is_active_object_update:
+            manager.set_first_texture()
+            manager._last_active_object = manager.active_object
+            manager._last_material = manager.material
+            manager._last_first_image = manager.first_image
+        elif manager.is_material_update:
+            manager.set_first_texture()
+            manager._last_material = manager.material
+            manager._last_first_image = manager.first_image
+        elif manager.is_first_image_update:
+            manager.set_first_texture()
+            manager._last_first_image = manager.first_image
 
 class Texture_Manager_Prop(PropertyGroup):
     manager = Manager()
@@ -287,39 +312,43 @@ class Texture_Manager_Panel(Panel):
 
     def draw(self, context):
         layout = self.layout
-        scene = context.scene
+        Texture_Manager_Prop = context.scene.Texture_Manager_Prop
+        manager = Texture_Manager_Prop.manager
         user_preferences = context.user_preferences
         addon_prefs = user_preferences.addons[__name__].preferences
         col = layout.column()
-        col.prop(addon_prefs,"Enable_AutoUpdate")
-        if addon_prefs.Enable_Engine:
-            col.prop(context.scene.render, "engine")
+        if manager.is_support:
+            col.prop(addon_prefs,"Enable_AutoUpdate")
+            if addon_prefs.Enable_Engine:
+                col.prop(context.scene.render, "engine")
 
-        material = scene.Texture_Manager_Prop.manager.material
-        ob = context.object
+            material = manager.material
+            ob = context.object
 
-        if addon_prefs.Enable_Material:
-            if context.object is not None:
-                is_sortable = (len(ob.material_slots) > 1)
-                rows = 1
-                if is_sortable:
-                    rows = 4
-                row = col.row()
-                row.template_list("MATERIAL_UL_matslots", "", ob, "material_slots", ob, "active_material_index", rows=rows)
+            if addon_prefs.Enable_Material:
+                if context.object is not None:
+                    is_sortable = (len(ob.material_slots) > 1)
+                    rows = 1
+                    if is_sortable:
+                        rows = 4
+                    row = col.row()
+                    row.template_list("MATERIAL_UL_matslots", "", ob, "material_slots", ob, "active_material_index", rows=rows)
 
-        if material is not None:
-            if addon_prefs.Enable_Use_nodes:
-                if scene.Texture_Manager_Prop.manager is not None:
-                    col.prop(material, "use_nodes", icon='NODETREE')
-            if material.use_nodes:
-                col.label("Texture Node")
-                col.prop(scene.Texture_Manager_Prop,"node_texture_item")
+            if material is not None:
+                if addon_prefs.Enable_Use_nodes:
+                    if manager is not None:
+                        col.prop(material, "use_nodes", icon='NODETREE')
+                if material.use_nodes:
+                    col.label("Texture Node")
+                    col.prop(Texture_Manager_Prop,"node_texture_item")
+                else:
+                    if manager.render_engine == 'BLENDER_RENDER':
+                        col.label("Texture Slot")
+                        col.prop(Texture_Manager_Prop,"slot_textures_item")
             else:
-                if scene.Texture_Manager_Prop.manager.render_engine == 'BLENDER_RENDER':
-                    col.label("Texture Slot")
-                    col.prop(scene.Texture_Manager_Prop,"slot_textures_item")
+                col.label("Do not exist material")
         else:
-            col.label("Do not Exist Material")
+            col.label("Engine unspport")
     
 def register():
     bpy.utils.register_class(Texture_Manager_Prop)

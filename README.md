@@ -1,6 +1,7 @@
 # UVEditor-Texture-Manager
-Blender-get-node-texture 可以在選擇物件下，依定特定的材質顯示相關的texture，避免在全部的texture或material中抓取texture。
+Blender-get-node-texture 可以只顯示與物件相關的texture，減少查找texture的時間。
 
-依Render模式（只支持BI即Cycles）, Material, 及是否使用node，顯示texture清單。
+僅支持BI與Cycles。
 
-在AddonPreferences中可以點選AutoUpdate，使UVEditor在選取到物件時自動切換為物件的第一張貼圖。 Engine, Material, use_nodes點選可以選擇是否在Panel中看見對應的內容。
+開啟AutoUpdate，在物件、材質、第一張貼圖更動時，會自動更新UVEditor為第一張貼圖。
+（slot時為最上面一張，node時為第一個建立的texture node中的貼圖，不存在的情況則為None）
