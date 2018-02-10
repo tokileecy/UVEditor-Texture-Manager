@@ -20,7 +20,7 @@ Created by Stokes Lee
 bl_info = {
     "name": "UVEditor Texture Manager",
     "author": "Stokes Lee",
-    "version": (1, 0, 2),
+    "version": (1, 0, 3),
     "blender": (2, 79, 0),
     "location": "UV > Properties Shelf",
     "category": "UV",

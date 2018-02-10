@@ -74,9 +74,10 @@ class Manager():
 
     @property
     def material(self):
-        if len(self.active_object.material_slots) > 0 :
-            material = self.active_object.active_material
-            return material
+        if self.active_object is not None:
+            if len(self.active_object.material_slots) > 0 :
+                material = self.active_object.active_material
+                return material
         return None
     
     @property
