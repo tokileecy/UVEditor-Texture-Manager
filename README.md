@@ -1,5 +1,5 @@
 # UVEditor-Texture-Manager
-Blender-get-node-texture 可以只顯示與物件相關的texture，減少查找texture的時間。
+Blender-UVEditor-Texture-Manager 可以只顯示與物件相關的texture，減少查找texture的時間。
 
 僅支持BI與Cycles。
 
